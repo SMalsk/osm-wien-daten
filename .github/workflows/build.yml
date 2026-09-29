@@ -1,0 +1,56 @@
+name: OSM-Daten Wien aktualisieren
+
+on:
+  schedule:
+    - cron: "30 4 * * 1"      # jeden Montag 04:30 UTC
+  workflow_dispatch:           # manuell über "Run workflow"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: osmium-tool installieren
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool
+      - name: Österreich-Extrakt laden (Geofabrik)
+        run: curl -fsSL -A "otto-infrastrukturmatrix-build (GitHub Actions)" -o austria.osm.pbf https://download.geofabrik.de/europe/austria-latest.osm.pbf
+      - name: Wien-Datei erzeugen
+        run: python3 scripts/build_osm_wien.py austria.osm.pbf site
+      - name: Plausibilitätsprüfung
+        run: |
+          python3 - <<'PY'
+          import json; m=json.load(open('site/meta.json'))
+          assert m['anzahl_pois'] > 5000, f"zu wenige POIs: {m['anzahl_pois']}"
+          assert m['anzahl_linien'] > 1000, f"zu wenige Radlinien: {m['anzahl_linien']}"
+          print('ok', m)
+          PY
+      - name: Datenstand im Repo vermerken (hält den wöchentlichen Zeitplan aktiv)
+        run: |
+          cp site/meta.json datenstand.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add datenstand.json
+          git commit -m "Datenstand $(date -u +%F)" || echo "keine Änderung"
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
