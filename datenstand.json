@@ -1,8 +1,8 @@
 {
- "erstellt": "2026-09-29T08:42:12Z",
- "osm_stand": "2026-09-28T20:23:05Z",
+ "erstellt": "2026-10-05T11:43:02Z",
+ "osm_stand": "2026-10-03T20:20:50Z",
  "quelle": "Geofabrik austria-latest.osm.pbf, © OpenStreetMap-Mitwirkende (ODbL)",
  "bbox": "16.05,48.02,16.72,48.42",
- "anzahl_pois": 20690,
- "anzahl_linien": 11785
+ "anzahl_pois": 20696,
+ "anzahl_linien": 11803
 }
